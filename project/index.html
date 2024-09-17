@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Payment</title>
+    <!-- Link to CSS file -->
+    <link rel="stylesheet" href="styles.css">
+    <!-- Content Security Policy -->
+    
+</head>
+
+<body>
+
+  <header>
+    <div class="logo-container">
+        <img src="assets/APlogo.png" alt="Brand Logo">
+        <h1 class="brand-name">ALINA POPOVA</h1>
+    </div>
+
+    <nav>
+        <div class="burger-menu" id="burger-menu">
+            <!-- Burger icon -->
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div>
+        
+        <ul class="nav-links" id="nav-links">
+            <li><a href="index.html" class="active">Home</a></li>
+            <li><a href="privacy.html">Privacy Policy</a></li> <!-- Updated for Privacy Policy -->
+            <li><a href="contact.html">Contact Us</a></li> <!-- Added for Contact Us page -->
+            <li><a href="https://merchant.razorpay.com/policy/OrOebQ4vIZty7L/terms">Terms & Conditions</a></li>
+            <li><a href="https://merchant.razorpay.com/policy/OrOebQ4vIZty7L/refund">Cancellation & Refund</a></li>
+            <li><a href="https://merchant.razorpay.com/policy/OrOebQ4vIZty7L/shipping">Shipping & Delivery</a></li>
+        </ul>
+    </nav>
+</header>
+
+
+
+    <div class="container">
+        <div class="product-image">
+            <!-- Product thumbnail -->
+            <img src="assets/APlogo.png" alt="Product Thumbnail">
+        </div>
+        <div class="product-details">
+            <!-- Product title -->
+            <h2>Product Title</h2>
+            <!-- Product description -->
+            <p class="description">Short description of the product.</p>
+            <!-- Original price -->
+            <p class="price">Original Price: ₹99</p>
+            <!-- Discounted price -->
+            <p class="discounted-price">Discounted Price: ₹9</p>
+            <!-- Buy Now button -->
+            <button id="buy-button" class="buy-now">Buy Now @ ₹9</button>
+        </div>
+    </div>
+
+    <!-- Razorpay integration -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <!-- Link to external JavaScript for Razorpay -->
+    <script src="razorpay.js"></script>
+    <script>
+      // JavaScript for the burger menu
+      document.getElementById('burger-menu').addEventListener('click', function () {
+          const navLinks = document.getElementById('nav-links');
+          navLinks.classList.toggle('nav-active');
+      });
+  </script>
+  <footer>
+    <p>&copy; 2024 ALINA POPOVA. All rights reserved.</p>
+</footer>
+</body>
+</html>
