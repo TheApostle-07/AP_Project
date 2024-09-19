@@ -1,6 +1,6 @@
 document.getElementById('buy-button').onclick = function(e) {
     var options = {
-        "key": "rzp_test_zrrMvR1Dnm0J0f",  // Your Razorpay key
+        "key": "rzp_live_poKkS9p9jL4HEU",  // Your Razorpay key
         "amount": "900",  // Amount in paise (₹49.00)
         "currency": "INR",
         "name": "Alina Popova",
