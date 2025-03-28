@@ -1,0 +1,17 @@
+{
+  "name": "payment-project",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "crypto": "^1.0.1",
+    "next": "latest",
+    "razorpay": "^2.9.6",
+    "react": "latest",
+    "react-dom": "latest"
+  }
+}

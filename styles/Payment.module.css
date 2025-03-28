@@ -1,0 +1,312 @@
+/* Payment.module.css */
+
+/* Loading & Error States */
+.loading {
+  text-align: center;
+  margin-top: 50px;
+  font-size: 1.1rem;
+  color: var(--dark-gray);
+}
+
+.error {
+  text-align: center;
+  margin-top: 50px;
+  font-size: 1.1rem;
+  color: red;
+}
+
+/* ---------------------------------- */
+/*       Dynamic Mode Styles          */
+/* These classes are local to the Payment page */
+/* ---------------------------------- */
+
+/* Outer container for dynamic mode */
+.dynamicContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--light-coral-2);
+  padding: 20px;
+  min-height: 100vh;
+}
+
+/* Card layout for product info */
+.dynamicCard {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 25px;
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin: auto;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dynamicCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+}
+
+/* Product image styling */
+.dynamicImage img {
+  width: 100%;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: 2px solid var(--bittersweet-shimmer);
+  object-fit: cover;
+}
+
+/* Container for product details */
+.dynamicDetails {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Product Title */
+.productTitle {
+  color: var(--bittersweet-shimmer);
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+/* Product Description */
+.productDesc {
+  color: var(--dark-gray);
+  font-size: 1rem;
+  margin-bottom: 20px;
+  line-height: 1.6;
+  max-width: 500px;
+}
+
+/* Pricing */
+.originalPrice {
+  font-size: 1.1rem;
+  color: var(--light-coral);
+  text-decoration: line-through;
+  margin-bottom: 10px;
+}
+
+.discountedPrice {
+  font-size: 1.3rem;
+  color: var(--bittersweet-shimmer);
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+/* Buy Now Button */
+.buyNowBtn {
+  display: inline-block;
+  width: 100%;
+  padding: 12px;
+  background-color: var(--melon);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.buyNowBtn:hover {
+  background-color: var(--indian-red);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.buyNowBtn:active {
+  transform: scale(0.98);
+}
+
+/* Dynamic Mode Footer */
+.dynamicFooter {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.dynamicFooter p {
+  color: #fff;
+  background-color: var(--bittersweet-shimmer);
+  display: inline-block;
+  padding: 10px 20px;
+  border-radius: 8px;
+}
+
+/* ---------------------------------- */
+/*       Responsive Adjustments       */
+/* ---------------------------------- */
+@media (max-width: 768px) {
+  .dynamicCard {
+    padding: 20px;
+  }
+  .productTitle {
+    font-size: 1.3rem;
+  }
+  .productDesc {
+    font-size: 0.95rem;
+  }
+  .buyNowBtn {
+    font-size: 0.95rem;
+  }
+}
+
+/* Payment.module.css */
+
+/* Container for dynamic mode */
+.dynamicContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;  /* or center if you want vertical centering */
+  background-color: var(--light-coral-2);
+  padding: 40px 20px;  /* Extra top padding for breathing room */
+  min-height: 100vh;
+}
+
+/* The new header area above the card */
+.dynamicHeader {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.dynamicHeader h3 {
+  font-size: 1.8rem;                   /* Larger heading */
+  color: var(--bittersweet-shimmer);   /* Use a brand color */
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.dynamicHeader p {
+  font-size: 1rem;
+  color: var(--dark-gray);
+  line-height: 1.5;
+  max-width: 600px;
+  margin: 0 auto;       /* Center the paragraph if narrower than container */
+}
+
+.dynamicHeader p i {
+  font-style: italic;
+  color: var(--dark-gray);
+}
+
+/* The payment card itself */
+.dynamicCard {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 25px;
+  max-width: 600px;
+  width: 90%;                /* Let it scale on small screens */
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin: auto;
+  margin-top: 20px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dynamicCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+}
+
+/* Product image inside the card */
+.dynamicImage img {
+  width: 100%;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: 2px solid var(--bittersweet-shimmer);
+  object-fit: cover;
+}
+
+/* Product details within the card */
+.dynamicDetails {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.productTitle {
+  color: var(--bittersweet-shimmer);
+  font-size: 1.4rem;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.productDesc {
+  color: var(--dark-gray);
+  font-size: 1rem;
+  margin-bottom: 20px;
+  line-height: 1.6;
+  max-width: 500px;
+  text-align: center;
+}
+
+.originalPrice {
+  font-size: 1.1rem;
+  color: var(--light-coral);
+  text-decoration: line-through;
+  margin-bottom: 10px;
+}
+
+.discountedPrice {
+  font-size: 1.3rem;
+  color: var(--bittersweet-shimmer);
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+/* The "Buy Now" button */
+.buyNowBtn {
+  display: inline-block;
+  width: 100%;
+  padding: 12px;
+  background-color: var(--melon);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.buyNowBtn:hover {
+  background-color: var(--indian-red);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.buyNowBtn:active {
+  transform: scale(0.98);
+}
+
+/* Dynamic Footer below the card */
+.dynamicFooter {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.dynamicFooter p {
+  color: #fff;
+  background-color: var(--bittersweet-shimmer);
+  display: inline-block;
+  padding: 10px 20px;
+  border-radius: 8px;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  .dynamicHeader h3 {
+    font-size: 1.5rem;
+  }
+  .productTitle {
+    font-size: 1.2rem;
+  }
+  .productDesc {
+    font-size: 0.95rem;
+  }
+  .buyNowBtn {
+    font-size: 0.95rem;
+  }
+}
