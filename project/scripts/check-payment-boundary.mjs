@@ -22,6 +22,7 @@ assert.match(security, /__Host-alina_payment_handoff/, 'Production handoff cooki
 assert.match(security, /SameSite=Strict/, 'The payment capability cookie must remain same-site request bound');
 assert.doesNotMatch(security, /if \(!origin\) return true/, 'Missing Origin must never be trusted automatically');
 assert.match(pay, /checkout && \['ready'/, 'Razorpay must not load for an unauthenticated payment-page visit');
+assert.match(pay, /checkAuthoritativeStatus/, 'An interrupted browser callback must reconcile from server state');
 assert.doesNotMatch(gateway, /description\.slice/, 'Provider metadata must not receive creator or session prose');
 
 console.log('Payment handoff, server-owned price, signature, and webhook invariants passed.');

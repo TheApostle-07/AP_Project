@@ -71,6 +71,30 @@ export default function PaymentPage() {
     }
   }, [checkout, secondsRemaining, state]);
 
+  useEffect(() => {
+    if (!checkout || state !== 'verifying') return;
+    let active = true;
+    let attempts = 0;
+    let timer;
+    async function checkAuthoritativeStatus() {
+      attempts += 1;
+      try {
+        const response = await fetch('/api/handoff/status', { headers: { Accept: 'application/json' } });
+        const result = await response.json();
+        if (!active) return;
+        if (response.ok && result.checkout?.status === 'CONFIRMED') {
+          window.location.replace(result.checkout.returnUrl);
+          return;
+        }
+      } catch {
+        // A transient status request must never encourage a second payment.
+      }
+      if (active && attempts < 40) timer = window.setTimeout(checkAuthoritativeStatus, 3000);
+    }
+    timer = window.setTimeout(checkAuthoritativeStatus, 2000);
+    return () => { active = false; if (timer) window.clearTimeout(timer); };
+  }, [checkout, state]);
+
   async function beginPayment() {
     if (!checkout || state !== 'ready') return;
     if (!window.Razorpay || !razorpayReady) {
