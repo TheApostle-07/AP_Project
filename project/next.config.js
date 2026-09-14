@@ -6,7 +6,6 @@ const securityHeaders = [
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
   { key: 'Cross-Origin-Resource-Policy', value: 'same-origin' },
   { key: 'X-Permitted-Cross-Domain-Policies', value: 'none' },
-  { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive, nosnippet' },
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), browsing-topics=()' },
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
 ];
@@ -17,8 +16,8 @@ module.exports = {
   async headers() {
     return [
       { source: '/(.*)', headers: securityHeaders },
-      { source: '/pay', headers: [{ key: 'Cache-Control', value: 'private, no-store, max-age=0, must-revalidate' }, { key: 'Pragma', value: 'no-cache' }, { key: 'Expires', value: '0' }] },
-      { source: '/api/(.*)', headers: [{ key: 'Cache-Control', value: 'private, no-store, max-age=0, must-revalidate' }, { key: 'Pragma', value: 'no-cache' }, { key: 'Expires', value: '0' }] },
+      { source: '/pay', headers: [{ key: 'Cache-Control', value: 'private, no-store, max-age=0, must-revalidate' }, { key: 'Pragma', value: 'no-cache' }, { key: 'Expires', value: '0' }, { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive, nosnippet' }] },
+      { source: '/api/(.*)', headers: [{ key: 'Cache-Control', value: 'private, no-store, max-age=0, must-revalidate' }, { key: 'Pragma', value: 'no-cache' }, { key: 'Expires', value: '0' }, { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive, nosnippet' }] },
     ];
   },
 };

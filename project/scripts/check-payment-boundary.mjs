@@ -8,6 +8,7 @@ const pay = await readFile(new URL('../pages/pay.js', import.meta.url), 'utf8');
 const handoff = await readFile(new URL('../lib/handoff.js', import.meta.url), 'utf8');
 const security = await readFile(new URL('../lib/security.js', import.meta.url), 'utf8');
 const gateway = await readFile(new URL('../lib/paymentGateway.js', import.meta.url), 'utf8');
+const home = await readFile(new URL('../pages/index.js', import.meta.url), 'utf8');
 
 assert.match(order, /amount: Number\(handoff\.amount_minor\)/, 'Razorpay order must use the server-held amount');
 assert.doesNotMatch(order, /request\.body\?\.amount/, 'Order API must never accept a browser amount');
@@ -24,5 +25,7 @@ assert.doesNotMatch(security, /if \(!origin\) return true/, 'Missing Origin must
 assert.match(pay, /checkout && \['ready'/, 'Razorpay must not load for an unauthenticated payment-page visit');
 assert.match(pay, /checkAuthoritativeStatus/, 'An interrupted browser callback must reconcile from server state');
 assert.doesNotMatch(gateway, /description\.slice/, 'Provider metadata must not receive creator or session prose');
+assert.match(home, /Portrait of Timeless Beauty/, 'The Razorpay-approved merchant homepage must remain at the root route');
+assert.doesNotMatch(home, /new window\.Razorpay|init-payment|request\.body/, 'The approved homepage must not recreate the legacy client-controlled payment path');
 
 console.log('Payment handoff, server-owned price, signature, and webhook invariants passed.');
