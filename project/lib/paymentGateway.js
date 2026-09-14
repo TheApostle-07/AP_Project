@@ -4,8 +4,8 @@ import crypto from 'node:crypto';
 import { safeEqualHex } from './security';
 
 function credentials() {
-  const keyId = (process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY || '').trim();
-  const keySecret = (process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_SECRET || '').trim();
+  const keyId = (process.env.RAZORPAY_KEY_ID || '').trim();
+  const keySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
   if (!keyId || !keySecret) throw new Error('RAZORPAY_CREDENTIALS_REQUIRED');
   return { keyId, keySecret };
 }
