@@ -1,6 +1,24 @@
 import { query } from './db';
 import { HANDOFF_COOKIE, handoffTokenHash, isValidHandoffToken, readCookie } from './security';
 
+const DEFAULT_BOOKING_ORIGIN = 'https://alina-popova-im.vercel.app';
+
+function trustedBookingOrigin() {
+  const configured = process.env.NEXT_PUBLIC_BOOKING_ORIGIN || DEFAULT_BOOKING_ORIGIN;
+  const url = new URL(configured);
+  const local = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+  if (url.protocol !== 'https:' && !(process.env.NODE_ENV !== 'production' && local)) {
+    throw new Error('INVALID_BOOKING_ORIGIN');
+  }
+  return url.origin;
+}
+
+export function bookingReturnUrl(row) {
+  const bookingOrigin = trustedBookingOrigin();
+  if (new URL(row.return_origin).origin !== bookingOrigin) throw new Error('UNTRUSTED_RETURN_ORIGIN');
+  return `${bookingOrigin}/booking/${row.reference}?checkout=returned`;
+}
+
 const selectHandoff = `
   SELECT h.id AS handoff_id, h.checkout_session_id, h.status AS handoff_status,
          h.return_origin, h.provider_order_id, h.provider_payment_id,
@@ -35,14 +53,15 @@ export async function getRequestHandoff(request, options) {
 }
 
 export function publicSummary(row) {
-  const creatorImageUrl = row.creator_image_url?.startsWith('/')
-    ? `${row.return_origin}${row.creator_image_url}`
-    : row.creator_image_url;
+  const bookingOrigin = trustedBookingOrigin();
+  if (new URL(row.return_origin).origin !== bookingOrigin) throw new Error('UNTRUSTED_RETURN_ORIGIN');
   return {
     reference: row.reference,
     creatorName: row.creator_name,
     creatorSlug: row.creator_slug,
-    creatorImageUrl,
+    // Do not make the dedicated payment origin fetch creator media. This
+    // avoids disclosing a checkout visitor's network address to media hosts.
+    creatorImageUrl: null,
     experienceName: row.experience_name,
     durationMinutes: Number(row.duration_minutes),
     amountMinor: Number(row.amount_minor),
@@ -52,6 +71,6 @@ export function publicSummary(row) {
     timezone: row.fan_timezone,
     status: row.checkout_status,
     expiresAt: new Date(row.expires_at).toISOString(),
-    returnUrl: `${row.return_origin}/booking/${row.reference}?checkout=returned`,
+    returnUrl: bookingReturnUrl(row),
   };
 }

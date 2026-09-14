@@ -24,6 +24,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid color-mix(in srgb, va
 .payment-card { padding: clamp(28px, 6vw, 56px); border: 1px solid var(--border); border-radius: 20px; background: var(--surface); box-shadow: 0 20px 60px rgba(28, 24, 20, .045); }
 .creator-row { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding-bottom: 26px; border-bottom: 1px solid var(--border); }
 .creator-row img { width: 64px; height: 64px; border-radius: 16px; object-fit: cover; background: var(--soft); }
+.creator-monogram { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 16px; background: var(--soft); color: var(--accent); font-size: 24px; font-weight: 600; }
 .creator-row span { min-width: 0; }
 .creator-row strong, .creator-row small { display: block; }
 .creator-row strong { font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
@@ -79,6 +80,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid color-mix(in srgb, va
   .payment-card { padding: 24px 20px; border-radius: 16px; }
   .creator-row { grid-template-columns: 54px minmax(0, 1fr); }
   .creator-row img { width: 54px; height: 54px; border-radius: 14px; }
+  .creator-monogram { width: 54px; height: 54px; border-radius: 14px; }
   .verified { grid-column: 2; justify-self: start; margin-top: -8px; }
   .payment-heading { margin: 30px 0 26px; }
   .session-time { flex-direction: column; gap: 7px; }

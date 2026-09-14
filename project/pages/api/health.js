@@ -10,10 +10,6 @@ export default async function handler(request, response) {
   }
   const razorpay = isRazorpayReady();
   const webhook = Boolean(process.env.RAZORPAY_WEBHOOK_SECRET?.trim());
-  return response.status(database && razorpay ? 200 : 503).json({
-    status: database && razorpay ? 'ready' : 'configuration_required',
-    database: database ? 'connected' : 'unavailable',
-    razorpay: razorpay ? 'configured' : 'unavailable',
-    webhook: webhook ? 'configured' : 'required',
-  });
+  const ready = database && razorpay && webhook;
+  return response.status(ready ? 200 : 503).json({ status: ready ? 'ready' : 'unavailable' });
 }

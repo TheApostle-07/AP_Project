@@ -38,8 +38,12 @@ export default function PaymentPage() {
         const result = await response.json();
         if (!response.ok || !result.checkout) throw new Error(result.message || 'This payment link is unavailable.');
         if (!active) return;
+        if (result.checkout.status === 'CONFIRMED') {
+          window.location.replace(result.checkout.returnUrl);
+          return;
+        }
         setCheckout(result.checkout);
-        setState(result.checkout.status === 'CONFIRMED' ? 'confirmed' : 'ready');
+        setState('ready');
         setMessage('');
       } catch (error) {
         if (!active) return;
@@ -148,7 +152,7 @@ export default function PaymentPage() {
         <meta name="description" content="Complete a protected creator booking with Razorpay." />
         <meta name="robots" content="noindex,nofollow" />
       </Head>
-      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" onLoad={() => setRazorpayReady(true)} onError={() => { setRazorpayReady(false); setMessage('Razorpay could not load. Check your connection and try again.'); }} />
+      {checkout && ['ready', 'opening', 'checkout', 'verifying'].includes(state) ? <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" onLoad={() => setRazorpayReady(true)} onError={() => { setRazorpayReady(false); setMessage('Razorpay could not load. Check your connection and try again.'); }} /> : null}
       <main className="payment-page">
         <div className="payment-shell">
           <a className="wordmark" href={bookingOrigin} aria-label="Alina home">ALINA</a>
@@ -156,7 +160,7 @@ export default function PaymentPage() {
           {state === 'error' ? <section className="payment-card error-card"><span className="status-dot" aria-hidden="true">!</span><p className="eyebrow">Payment link unavailable</p><h1>Return to your booking.</h1><p>{message}</p><a className="primary-action" href={bookingOrigin}>Back to Alina</a></section> : null}
           {checkout && state !== 'loading' && state !== 'error' ? (
             <section className="payment-card">
-              <header className="creator-row"><img src={checkout.creatorImageUrl} alt="" /><span><strong>{checkout.creatorName}</strong><small>Private creator session</small></span><span className="verified">Verified</span></header>
+              <header className="creator-row">{checkout.creatorImageUrl ? <img src={checkout.creatorImageUrl} alt="" referrerPolicy="no-referrer" /> : <div className="creator-monogram" aria-hidden="true">{checkout.creatorName?.trim().charAt(0) || 'A'}</div>}<span><strong>{checkout.creatorName}</strong><small>Private creator session</small></span><span className="verified">Verified</span></header>
               <div className="payment-heading"><p className="eyebrow">Secure Razorpay checkout</p><h1>{state === 'confirmed' ? 'You’re booked.' : state === 'verifying' ? 'Confirming your booking…' : 'Confirm your session.'}</h1><p>{state === 'ready' || state === 'opening' ? 'The amount and time below come directly from your protected booking.' : message}</p></div>
               <div className="session-time"><strong>{dateLabel(checkout.sessionStart, checkout.timezone)}</strong><span>{timeLabel(checkout.sessionStart, checkout.timezone)}–{timeLabel(checkout.sessionEnd, checkout.timezone)}</span></div>
               <dl className="payment-summary"><div><dt>Experience</dt><dd>{checkout.experienceName}</dd></div><div><dt>Duration</dt><dd>{checkout.durationMinutes} minutes</dd></div><div><dt>Reference</dt><dd>{checkout.reference}</dd></div><div className="total"><dt>Total</dt><dd>{money(checkout.amountMinor, checkout.currency)} <small>{checkout.currency}</small></dd></div></dl>

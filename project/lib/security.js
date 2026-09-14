@@ -1,7 +1,9 @@
 import crypto from 'node:crypto';
 import { query } from './db';
 
-export const HANDOFF_COOKIE = 'alina_payment_handoff';
+export const HANDOFF_COOKIE = process.env.NODE_ENV === 'production'
+  ? '__Host-alina_payment_handoff'
+  : 'alina_payment_handoff';
 
 export function handoffTokenHash(token) {
   return crypto.createHash('sha256').update(`payment-handoff:${token}`).digest('hex');
@@ -26,23 +28,27 @@ export function setHandoffCookie(response, token, expiresAt) {
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
   response.setHeader(
     'Set-Cookie',
-    `${HANDOFF_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}; Expires=${expires.toUTCString()}${secure}`,
+    `${HANDOFF_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Strict; Priority=High; Max-Age=${maxAge}; Expires=${expires.toUTCString()}${secure}`,
   );
 }
 
 export function clearHandoffCookie(response) {
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  response.setHeader('Set-Cookie', `${HANDOFF_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`);
+  response.setHeader('Set-Cookie', `${HANDOFF_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Priority=High; Max-Age=0${secure}`);
 }
 
 export function requestIsSameOrigin(request) {
   const origin = request.headers.origin;
-  if (!origin) return true;
   try {
-    const host = request.headers['x-forwarded-host'] || request.headers.host;
+    const fetchSite = request.headers['sec-fetch-site'];
+    if (fetchSite && fetchSite !== 'same-origin' && fetchSite !== 'none') return false;
+    const host = String(request.headers['x-forwarded-host'] || request.headers.host || '').split(',')[0].trim();
+    if (!host) return false;
     const local = String(host || '').startsWith('localhost') || String(host || '').startsWith('127.0.0.1');
     const expected = `${request.headers['x-forwarded-proto'] || (local ? 'http' : 'https')}://${host}`;
-    return new URL(origin).origin === new URL(expected).origin;
+    if (origin) return new URL(origin).origin === new URL(expected).origin;
+    const referer = request.headers.referer;
+    return Boolean(referer && new URL(referer).origin === new URL(expected).origin);
   } catch {
     return false;
   }

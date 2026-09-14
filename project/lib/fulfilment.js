@@ -1,4 +1,5 @@
 import { query } from './db';
+import { bookingReturnUrl } from './handoff';
 import { normalizedEmail } from './security';
 
 async function checkoutForOrder(orderId) {
@@ -45,7 +46,7 @@ async function markReconciliation(checkout, payment, rawState, code) {
 export async function fulfilRazorpayPayment(order, payment) {
   const checkout = await checkoutForOrder(order.id);
   if (!checkout) throw new Error('CHECKOUT_NOT_FOUND');
-  const returnUrl = `${checkout.return_origin}/booking/${checkout.reference}?checkout=returned`;
+  const returnUrl = bookingReturnUrl(checkout);
   if (checkout.status === 'CONFIRMED') return { reference: checkout.reference, state: 'CONFIRMED', returnUrl };
   if (payment.order_id !== order.id || payment.status !== 'captured' || !payment.captured || order.status !== 'paid') {
     return { reference: checkout.reference, state: 'PROCESSING', returnUrl };

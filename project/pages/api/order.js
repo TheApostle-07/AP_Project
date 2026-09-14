@@ -21,6 +21,7 @@ function assertOrderMatches(order, handoff) {
 
 export default async function handler(request, response) {
   response.setHeader('Cache-Control', 'private, no-store, max-age=0');
+  response.setHeader('Vary', 'Cookie, Origin');
   if (request.method !== 'POST') {
     response.setHeader('Allow', 'POST');
     return response.status(405).json({ message: 'Method not allowed.' });

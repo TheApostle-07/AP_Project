@@ -1,9 +1,10 @@
 import { getHandoffByToken, publicSummary } from '../../../lib/handoff';
 import { query } from '../../../lib/db';
-import { isValidHandoffToken, requestIsSameOrigin, setHandoffCookie } from '../../../lib/security';
+import { clearHandoffCookie, isValidHandoffToken, requestIsSameOrigin, setHandoffCookie } from '../../../lib/security';
 
 export default async function handler(request, response) {
   response.setHeader('Cache-Control', 'private, no-store, max-age=0');
+  response.setHeader('Vary', 'Cookie, Origin');
   if (request.method !== 'POST') {
     response.setHeader('Allow', 'POST');
     return response.status(405).json({ message: 'Method not allowed.' });
@@ -24,7 +25,8 @@ export default async function handler(request, response) {
        WHERE id = $1::uuid AND expires_at > now()`,
       [handoff.handoff_id],
     );
-    setHandoffCookie(response, token, handoff.expires_at);
+    if (handoff.checkout_status === 'CONFIRMED') clearHandoffCookie(response);
+    else setHandoffCookie(response, token, handoff.expires_at);
     return response.status(200).json({ checkout: publicSummary(handoff) });
   } catch {
     return response.status(503).json({ message: 'Secure payment is briefly unavailable. Your booking record is unchanged.' });

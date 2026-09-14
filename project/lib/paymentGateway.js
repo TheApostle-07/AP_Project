@@ -34,10 +34,10 @@ async function razorpayRequest(path, options = {}) {
   return response.json();
 }
 
-export async function createOrder({ amount, currency, reference, description }) {
+export async function createOrder({ amount, currency, reference }) {
   return razorpayRequest('/orders', {
     method: 'POST',
-    body: JSON.stringify({ amount, currency, receipt: reference, notes: { checkout_reference: reference, description: description.slice(0, 255) } }),
+    body: JSON.stringify({ amount, currency, receipt: reference, notes: { booking_reference: reference } }),
   });
 }
 

@@ -6,6 +6,8 @@ const verify = await readFile(new URL('../pages/api/verify.js', import.meta.url)
 const webhook = await readFile(new URL('../pages/api/webhook.js', import.meta.url), 'utf8');
 const pay = await readFile(new URL('../pages/pay.js', import.meta.url), 'utf8');
 const handoff = await readFile(new URL('../lib/handoff.js', import.meta.url), 'utf8');
+const security = await readFile(new URL('../lib/security.js', import.meta.url), 'utf8');
+const gateway = await readFile(new URL('../lib/paymentGateway.js', import.meta.url), 'utf8');
 
 assert.match(order, /amount: Number\(handoff\.amount_minor\)/, 'Razorpay order must use the server-held amount');
 assert.doesNotMatch(order, /request\.body\?\.amount/, 'Order API must never accept a browser amount');
@@ -15,5 +17,11 @@ assert.match(webhook, /x-razorpay-event-id/, 'Webhook processing must deduplicat
 assert.match(pay, /window\.location\.hash/, 'Handoff must arrive in a fragment, not a logged query parameter');
 assert.doesNotMatch(pay, /prefill:/, 'Checkout must not contain dummy identity prefill');
 assert.match(handoff, /token_hash = \$1/, 'Only the handoff token digest may be looked up in storage');
+assert.match(handoff, /UNTRUSTED_RETURN_ORIGIN/, 'Database return origins must be checked against the configured booking origin');
+assert.match(security, /__Host-alina_payment_handoff/, 'Production handoff cookie must use the __Host prefix');
+assert.match(security, /SameSite=Strict/, 'The payment capability cookie must remain same-site request bound');
+assert.doesNotMatch(security, /if \(!origin\) return true/, 'Missing Origin must never be trusted automatically');
+assert.match(pay, /checkout && \['ready'/, 'Razorpay must not load for an unauthenticated payment-page visit');
+assert.doesNotMatch(gateway, /description\.slice/, 'Provider metadata must not receive creator or session prose');
 
 console.log('Payment handoff, server-owned price, signature, and webhook invariants passed.');

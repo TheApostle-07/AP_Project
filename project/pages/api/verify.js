@@ -1,10 +1,11 @@
 import { fulfilRazorpayPayment } from '../../lib/fulfilment';
 import { getRequestHandoff } from '../../lib/handoff';
 import { fetchOrder, fetchPayment, verifyPaymentSignature } from '../../lib/paymentGateway';
-import { enforceTokenRateLimit, handoffTokenHash, requestIsSameOrigin } from '../../lib/security';
+import { clearHandoffCookie, enforceTokenRateLimit, handoffTokenHash, requestIsSameOrigin } from '../../lib/security';
 
 export default async function handler(request, response) {
   response.setHeader('Cache-Control', 'private, no-store, max-age=0');
+  response.setHeader('Vary', 'Cookie, Origin');
   if (request.method !== 'POST') {
     response.setHeader('Allow', 'POST');
     return response.status(405).json({ message: 'Method not allowed.' });
@@ -27,6 +28,7 @@ export default async function handler(request, response) {
     }
     const [order, payment] = await Promise.all([fetchOrder(handoff.provider_order_id), fetchPayment(paymentId)]);
     const result = await fulfilRazorpayPayment(order, payment);
+    clearHandoffCookie(response);
     return response.status(200).json(result);
   } catch {
     return response.status(503).json({ message: 'We’re checking your payment. Don’t make another payment yet.' });
