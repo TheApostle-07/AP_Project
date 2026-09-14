@@ -25,6 +25,10 @@ assert.doesNotMatch(security, /if \(!origin\) return true/, 'Missing Origin must
 assert.match(pay, /checkout && \['ready'/, 'Razorpay must not load for an unauthenticated payment-page visit');
 assert.match(pay, /checkAuthoritativeStatus/, 'An interrupted browser callback must reconcile from server state');
 assert.doesNotMatch(gateway, /description\.slice/, 'Provider metadata must not receive creator or session prose');
+assert.match(gateway, /RAZORPAY_TEST_KEY_ID/, 'Test mode must use its dedicated key ID');
+assert.match(gateway, /RAZORPAY_TEST_KEY_SECRET/, 'Test mode must use its dedicated key secret');
+assert.match(gateway, /RAZORPAY_KEY_MODE_MISMATCH/, 'Credential prefixes must match the selected payment mode');
+assert.match(gateway, /RAZORPAY_TEST_CREDENTIALS_INCOMPLETE/, 'A partial test configuration must fail closed');
 assert.match(home, /Portrait of Timeless Beauty/, 'The Razorpay-approved merchant homepage must remain at the root route');
 assert.doesNotMatch(home, /new window\.Razorpay|init-payment|request\.body/, 'The approved homepage must not recreate the legacy client-controlled payment path');
 

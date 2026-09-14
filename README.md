@@ -8,6 +8,9 @@ app exchanges it for an HttpOnly cookie, creates the Razorpay order from the
 server-held amount, verifies the response server-side, and transactionally
 confirms the booking.
 
-Required production variables are documented in `.env.example`. Configure the
-Razorpay live webhook URL as `https://ap-project-ebkr.vercel.app/api/webhook`
-for `payment.captured` and `order.paid` events.
+Required production variables are documented in `.env.example`. When a complete
+`RAZORPAY_TEST_KEY_ID` and `RAZORPAY_TEST_KEY_SECRET` pair is present, the app
+defaults safely to test mode. Set `RAZORPAY_MODE=live` explicitly and redeploy
+only when real payments should begin. Configure the Razorpay webhook URL as
+`https://ap-project-ebkr.vercel.app/api/webhook` for `payment.captured` and
+`order.paid` events in the matching Razorpay dashboard mode.
