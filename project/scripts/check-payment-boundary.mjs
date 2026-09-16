@@ -9,6 +9,7 @@ const handoff = await readFile(new URL('../lib/handoff.js', import.meta.url), 'u
 const security = await readFile(new URL('../lib/security.js', import.meta.url), 'utf8');
 const gateway = await readFile(new URL('../lib/paymentGateway.js', import.meta.url), 'utf8');
 const home = await readFile(new URL('../pages/index.js', import.meta.url), 'utf8');
+const catalog = await readFile(new URL('../lib/artwork-catalog.mjs', import.meta.url), 'utf8');
 
 assert.match(order, /amount: Number\(handoff\.amount_minor\)/, 'Razorpay order must use the server-held amount');
 assert.doesNotMatch(order, /request\.body\?\.amount/, 'Order API must never accept a browser amount');
@@ -29,7 +30,8 @@ assert.match(gateway, /RAZORPAY_TEST_KEY_ID/, 'Test mode must use its dedicated 
 assert.match(gateway, /RAZORPAY_TEST_KEY_SECRET/, 'Test mode must use its dedicated key secret');
 assert.match(gateway, /RAZORPAY_KEY_MODE_MISMATCH/, 'Credential prefixes must match the selected payment mode');
 assert.match(gateway, /RAZORPAY_TEST_CREDENTIALS_INCOMPLETE/, 'A partial test configuration must fail closed');
-assert.match(home, /Portrait of Timeless Beauty/, 'The Razorpay-approved merchant homepage must remain at the root route');
+assert.match(catalog, /Portrait of Timeless Beauty/, 'The original artwork must remain in the homepage catalog');
+assert.match(home, /artworks\.map/, 'The artwork catalog must remain at the root route');
 assert.doesNotMatch(home, /new window\.Razorpay|init-payment|request\.body/, 'The approved homepage must not recreate the legacy client-controlled payment path');
 
 console.log('Payment handoff, server-owned price, signature, and webhook invariants passed.');

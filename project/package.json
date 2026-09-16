@@ -4,14 +4,22 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "next build",
+    "build": "node scripts/migrate-artwork.mjs && next build",
     "start": "next start",
-    "check": "node scripts/check-payment-boundary.mjs"
+    "check": "node scripts/check-payment-boundary.mjs",
+    "test": "node --test tests/artwork.test.mjs",
+    "test:browser": "playwright test",
+    "db:artwork": "node scripts/migrate-artwork.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
     "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@playwright/test": "1.63.0",
+    "esbuild": "0.28.2"
   }
 }

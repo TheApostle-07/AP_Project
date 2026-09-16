@@ -13,6 +13,7 @@ const securityHeaders = [
 module.exports = {
   poweredByHeader: false,
   reactStrictMode: true,
+  outputFileTracingIncludes: { '/api/artwork/*': ['./assets/artwork/*.png'] },
   async headers() {
     return [
       { source: '/(.*)', headers: securityHeaders },

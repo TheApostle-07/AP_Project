@@ -1,7 +1,9 @@
 import crypto from 'node:crypto';
 import { query } from '../../lib/db';
 import { fulfilRazorpayPayment } from '../../lib/fulfilment';
-import { fetchOrder, fetchOrderPayments, verifyWebhookSignature } from '../../lib/paymentGateway';
+import { fetchOrder, fetchOrderPayments, fetchPayment, verifyWebhookSignature } from '../../lib/paymentGateway';
+import { artworkService } from '../../lib/artwork-server';
+import { ArtworkError } from '../../lib/artwork-orders.mjs';
 
 export const config = { api: { bodyParser: false } };
 
@@ -48,9 +50,25 @@ export default async function handler(request, response) {
     const orderId = orderIdFromEvent(event);
     if (['payment.captured', 'order.paid'].includes(event.event) && orderId) {
       const [order, payments] = await Promise.all([fetchOrder(orderId), fetchOrderPayments(orderId)]);
-      const payment = payments.find((item) => item.status === 'captured' && item.captured);
-      if (!payment) throw new Error('CAPTURED_PAYMENT_NOT_FOUND');
-      await fulfilRazorpayPayment(order, payment);
+      if (String(order.receipt).startsWith('ART-')) {
+        // A delayed capture notification may arrive after a refund. Reconcile all
+        // settled payments rather than reviving access from the stale event payload.
+        const settled = payments.filter((item) => (item.status === 'captured' && item.captured) || item.status === 'refunded' || Number(item.amount_refunded) > 0);
+        if (!settled.length) throw new Error('CAPTURED_PAYMENT_NOT_FOUND');
+        for (const payment of settled) await artworkService.fulfil(order, payment);
+      } else {
+        const payment = payments.find((item) => item.status === 'captured' && item.captured);
+        if (!payment) throw new Error('CAPTURED_PAYMENT_NOT_FOUND');
+        await fulfilRazorpayPayment(order, payment);
+      }
+    }
+    if (event.event === 'refund.processed') {
+      const paymentId = event?.payload?.refund?.entity?.payment_id;
+      if (/^pay_[A-Za-z0-9]+$/.test(paymentId || '')) {
+        const payment = await fetchPayment(paymentId);
+        const order = await fetchOrder(payment.order_id);
+        if (String(order.receipt).startsWith('ART-')) await artworkService.fulfil(order, payment);
+      }
     }
     await query(
       `UPDATE webhook_events SET processing_state = 'PROCESSED', processed_at = now(), last_error_code = NULL
@@ -59,7 +77,7 @@ export default async function handler(request, response) {
     );
     return response.status(200).json({ received: true });
   } catch (error) {
-    if (error instanceof Error && error.message === 'CHECKOUT_NOT_FOUND') {
+    if ((error instanceof Error && error.message === 'CHECKOUT_NOT_FOUND') || (error instanceof ArtworkError && error.status === 404)) {
       await query(
         `UPDATE webhook_events SET processing_state = 'PROCESSED', processed_at = now(), last_error_code = 'UNRELATED_ORDER'
          WHERE provider = 'RAZORPAY' AND provider_event_id = $1`,

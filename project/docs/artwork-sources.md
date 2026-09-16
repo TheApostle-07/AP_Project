@@ -1,12 +1,14 @@
 # Artwork catalog assets
 
-Added 16 September 2026 using the built-in image-generation tool. Both new portraits depict fictional adults; they are AI-generated artwork, not photographs or claims of commissioned/hand-painted work. The existing `APlogo.png` was kept unchanged.
+Added 16 September 2026 using the built-in image-generation tool. Both new portraits depict fictional adults; they are AI-generated artwork, not photographs or claims of commissioned/hand-painted work. The existing portrait composition was kept unchanged.
 
-Saved files:
+Public 480px previews:
 - `project/public/images/artwork/rose-reverie.png`
 - `project/public/images/artwork/midnight-bloom.png`
 
-Display prices match the private-video-call options visible on https://alina-popova-im.vercel.app/@alina-popova on 16 September 2026: ₹2,499 (10 minutes), ₹3,999 (20 minutes), ₹5,499 (30 minutes). Artwork is a separate catalog; no booking price, payment metadata, or checkout logic is derived from it. No discount or previous-price claim is made.
+Full-resolution PNGs are in `project/assets/artwork/`, delivered only through the verified artwork download endpoint. Existing public originals may remain in historic caches or copies; moving the files does not revoke those copies.
+
+Prices were aligned with the private-video-call options visible on https://alina-popova-im.vercel.app/@alina-popova on 16 September 2026: ₹2,499, ₹3,999, ₹5,499. Artwork is a separate product: these prices are now authoritative for artwork checkout only. No booking prices, booking access, or session entitlements are changed. No discount or previous-price claim is made. See `artwork-purchases.md` for the purchase flow.
 
 ## Final prompts
 

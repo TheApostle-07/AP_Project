@@ -1,37 +1,7 @@
 import Head from 'next/head';
 import Image from 'next/image';
 import { useState } from 'react';
-
-// Display-only artwork prices. Booking totals remain owned by the payment server.
-const artworks = [
-  {
-    id: 'timeless-beauty',
-    title: 'Portrait of Timeless Beauty',
-    image: '/images/APlogo.png',
-    description: 'This digital masterpiece embodies the delicate balance between strength and softness, capturing the timeless beauty of a woman whose presence radiates warmth and allure.',
-    price: 2499,
-  },
-  {
-    id: 'rose-reverie',
-    title: 'Rose Reverie',
-    image: '/images/artwork/rose-reverie.png',
-    description: 'A quiet portrait framed by flowing roses, warm terracotta and delicate gold details. Soft petals and expressive lines come together in a moment of graceful stillness.',
-    price: 3999,
-  },
-  {
-    id: 'midnight-bloom',
-    title: 'Midnight Bloom',
-    image: '/images/artwork/midnight-bloom.png',
-    description: 'Lotus blossoms unfold against midnight indigo in this ornamental portrait. Rose tones, flowing botanical motifs and antique-gold accents bring a gentle warmth to the night.',
-    price: 5499,
-  },
-];
-
-const formatPrice = new Intl.NumberFormat('en-IN', {
-  style: 'currency',
-  currency: 'INR',
-  maximumFractionDigits: 0,
-});
+import { artworks, artworkPrice } from '../lib/artwork-catalog.mjs';
 
 const policyLinks = [
   ['Terms & Conditions', 'https://merchant.razorpay.com/policy/OrOebQ4vIZty7L/terms'],
@@ -84,7 +54,9 @@ export default function ApprovedMerchantHome() {
               <div className="legacy-product-details">
                 <h2 id={`${artwork.id}-title`}>{artwork.title}</h2>
                 <p className="legacy-description">{artwork.description}</p>
-                <p className="legacy-price"><span className="sr-only">Price: </span>{formatPrice.format(artwork.price)}</p>
+                <p className="legacy-price"><span className="sr-only">Price: </span>{artworkPrice(artwork.amountMinor)}</p>
+                <a className="legacy-purchase" href={`/artwork/${artwork.id}`} aria-label={`Buy ${artwork.title}`}>Buy artwork</a>
+                <p className="legacy-delivery">Digital PNG · Download after payment</p>
               </div>
             </article>
           ))}

@@ -66,6 +66,14 @@ export async function createOrder({ amount, currency, reference }) {
   });
 }
 
+export async function createArtworkOrder({ amount, currency, reference, artworkId, title }) {
+  return razorpayRequest('/orders', {
+    method: 'POST',
+    body: JSON.stringify({ amount, currency, receipt: reference,
+      notes: { product_type: 'digital_artwork', artwork_id: artworkId, artwork_title: title } }),
+  });
+}
+
 export async function fetchOrder(orderId) {
   return razorpayRequest(`/orders/${encodeURIComponent(orderId)}`);
 }
