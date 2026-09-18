@@ -24,7 +24,8 @@ const selectHandoff = `
          h.return_origin, h.provider_order_id, h.provider_payment_id,
          h.expires_at::text, c.reference, c.status::text AS checkout_status,
          (c.expected_amount_minor + c.fee_minor + c.tax_minor)::text AS amount_minor,
-         c.currency, e.name AS experience_name, d.minutes AS duration_minutes,
+         c.currency, e.name AS experience_name,
+         (EXTRACT(EPOCH FROM (r.session_end - r.session_start)) / 60)::int AS duration_minutes,
          p.display_name AS creator_name, p.slug AS creator_slug, p.profile_image_url AS creator_image_url,
          r.session_start::text, r.session_end::text, c.fan_timezone
   FROM payment_handoffs h

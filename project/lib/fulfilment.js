@@ -29,17 +29,18 @@ async function markReconciliation(checkout, payment, rawState, code) {
          amount_minor, currency, status, raw_state
        )
        SELECT NULL, id, 'RAZORPAY', $2, 'checkout:' || id::text,
-              $4::bigint, currency, 'SUCCEEDED', $5::jsonb
+              $4::bigint, $6, 'SUCCEEDED', $5::jsonb
        FROM updated
        ON CONFLICT (idempotency_key) DO UPDATE SET
          provider_payment_id = EXCLUDED.provider_payment_id, status = 'SUCCEEDED',
+         amount_minor = EXCLUDED.amount_minor, currency = EXCLUDED.currency,
          raw_state = EXCLUDED.raw_state, updated_at = now()
      )
      UPDATE payment_handoffs
      SET status = 'VERIFIED', provider_payment_id = $2, provider_verified_at = COALESCE(provider_verified_at, now()),
          last_error_code = $3, updated_at = now()
      WHERE checkout_session_id = $1::uuid`,
-    [checkout.id, payment?.id || null, code, Number(payment?.amount || checkout.expected_amount_minor), JSON.stringify({ ...rawState, reconciliation: code })],
+    [checkout.id, payment?.id || null, code, Number(payment?.amount ?? checkout.expected_amount_minor), JSON.stringify({ ...rawState, reconciliation: code }), String(payment.currency).toUpperCase()],
   );
 }
 
@@ -47,7 +48,6 @@ export async function fulfilRazorpayPayment(order, payment) {
   const checkout = await checkoutForOrder(order.id);
   if (!checkout) throw new Error('CHECKOUT_NOT_FOUND');
   const returnUrl = bookingReturnUrl(checkout);
-  if (checkout.status === 'CONFIRMED') return { reference: checkout.reference, state: 'CONFIRMED', returnUrl };
   if (payment.order_id !== order.id || payment.status !== 'captured' || !payment.captured || order.status !== 'paid') {
     return { reference: checkout.reference, state: 'PROCESSING', returnUrl };
   }
@@ -61,6 +61,17 @@ export async function fulfilRazorpayPayment(order, payment) {
     paymentStatus: payment.status,
     method: payment.method || null,
   };
+  const [capture] = await query(
+    `SELECT record_checkout_capture($1::uuid,'RAZORPAY',$2,$3,$4::bigint,$5,$6) AS disposition`,
+    [checkout.id,payment.id,order.id,amountMinor,String(payment.currency).toUpperCase(),order.receipt],
+  );
+  if (capture?.disposition !== 'PRIMARY') {
+    if (capture?.disposition === 'DETAILS_MISMATCH' && checkout.status !== 'CONFIRMED') {
+      await markReconciliation(checkout, payment, rawState, 'PAYMENT_DETAILS_MISMATCH');
+    }
+    return { reference: checkout.reference, state: checkout.status === 'CONFIRMED' ? 'CONFIRMED' : 'RECONCILIATION_REQUIRED', returnUrl };
+  }
+  if (checkout.status === 'CONFIRMED') return { reference: checkout.reference, state: 'CONFIRMED', returnUrl };
   if (amountMinor !== expectedAmount || String(payment.currency).toUpperCase() !== checkout.currency || order.receipt !== checkout.reference) {
     await markReconciliation(checkout, payment, rawState, 'PAYMENT_DETAILS_MISMATCH');
     return { reference: checkout.reference, state: 'RECONCILIATION_REQUIRED', returnUrl };
@@ -71,20 +82,21 @@ export async function fulfilRazorpayPayment(order, payment) {
     const rows = await query(
       `WITH selected_checkout AS (
          SELECT c.* FROM checkout_sessions c
-         WHERE c.id = $1::uuid AND c.status IN ('PAYMENT_PROCESSING', 'PAID', 'RECONCILIATION_REQUIRED')
+         WHERE c.id = $1::uuid AND c.status IN ('PAYMENT_PROCESSING', 'PAID', 'RECONCILIATION_REQUIRED', 'EXPIRED')
          FOR UPDATE
        ), identified_checkout AS (
-         UPDATE checkout_sessions c
-         SET fan_email = COALESCE(c.fan_email, $3),
-             contact_status = CASE
+         SELECT c.id, c.reference, c.reference_lookup_hash, c.reservation_id,
+             c.influencer_id, c.experience_id, c.duration_id, c.fan_id, c.fan_name, c.fan_note,
+             c.expected_amount_minor, c.fee_minor, c.tax_minor, c.currency, c.fan_timezone,
+             c.idempotency_key, c.access_token_hash, c.terms_version, c.privacy_version,
+             c.booking_policy_version, c.legal_accepted_at, c.status, c.last_error_code,
+             COALESCE(c.fan_email, $3) AS fan_email,
+             CASE
                WHEN c.contact_status = 'VERIFIED' THEN 'VERIFIED'
                WHEN COALESCE(c.fan_email, $3) IS NOT NULL THEN 'PROVIDER_SUPPLIED'
                ELSE 'MISSING'
-             END,
-             updated_at = now()
-         FROM selected_checkout selected
-         WHERE c.id = selected.id
-         RETURNING c.*
+             END AS contact_status
+         FROM selected_checkout c
        ), linked_fan AS (
          INSERT INTO users (email, display_name, role, status, email_verified_at)
          SELECT fan_email, 'Fan', 'FAN', 'ACTIVE', NULL
@@ -97,11 +109,13 @@ export async function fulfilRazorpayPayment(order, payment) {
          UPDATE schedule_reservations r
          SET state = 'BOOKED', expires_at = NULL, updated_at = now()
          FROM identified_checkout c
-         WHERE r.id = c.reservation_id
-           AND r.state IN ('HELD', 'PAYMENT_PROCESSING', 'EXPIRED')
+          WHERE r.id = c.reservation_id
+           AND r.session_end > now()
+           AND (r.state IN ('HELD', 'PAYMENT_PROCESSING', 'EXPIRED')
+             OR (r.state = 'RELEASED' AND c.last_error_code IN ('CHECKOUT_WINDOW_EXPIRED', 'CHECKOUT_EXPIRED')))
            AND EXISTS (
              SELECT 1 FROM influencer_profiles profile JOIN users creator_user ON creator_user.id = profile.user_id
-             WHERE profile.id = c.influencer_id AND profile.creator_status = 'ACTIVE'
+             WHERE profile.id = c.influencer_id AND profile.creator_status IN ('ACTIVE','PAUSED')
                AND profile.archived_at IS NULL AND creator_user.status = 'ACTIVE'
            )
            AND NOT EXISTS (
@@ -117,14 +131,17 @@ export async function fulfilRazorpayPayment(order, payment) {
            experience_id, experience_name_snapshot, duration_minutes_snapshot,
            price_minor_snapshot, fee_minor_snapshot, tax_minor_snapshot, currency, policy_snapshot, session_start, session_end,
            influencer_timezone_snapshot, fan_timezone_snapshot, status, payment_status,
-           idempotency_key, management_token_hash, charged, contact_status
+           idempotency_key, management_token_hash, charged, contact_status,
+           terms_version, privacy_version, booking_policy_version, legal_accepted_at
          )
          SELECT c.reference, c.reference_lookup_hash, r.id, c.id, c.influencer_id,
                 COALESCE(c.fan_id, (SELECT id FROM eligible_fan LIMIT 1)),
-                COALESCE(c.fan_name, 'Guest'), c.fan_email, c.fan_note, c.experience_id, e.name, d.minutes,
+                COALESCE(c.fan_name, 'Guest'), c.fan_email, c.fan_note, c.experience_id, e.name,
+                (EXTRACT(EPOCH FROM (r.session_end - r.session_start)) / 60)::int,
                 c.expected_amount_minor, c.fee_minor, c.tax_minor, c.currency, e.cancellation_policy,
                 r.session_start, r.session_end, p.timezone, c.fan_timezone,
-                'CONFIRMED', 'SUCCEEDED', c.idempotency_key, c.access_token_hash, true, c.contact_status
+                'CONFIRMED', 'SUCCEEDED', c.idempotency_key, c.access_token_hash, true, c.contact_status,
+                c.terms_version, c.privacy_version, c.booking_policy_version, c.legal_accepted_at
          FROM identified_checkout c
          JOIN secured_slot r ON r.id = c.reservation_id
          JOIN experiences e ON e.id = c.experience_id
@@ -142,11 +159,31 @@ export async function fulfilRazorpayPayment(order, payment) {
          FROM created_booking b JOIN identified_checkout c ON c.id = b.checkout_session_id
          ON CONFLICT (idempotency_key) DO UPDATE SET
            booking_id = EXCLUDED.booking_id, provider_payment_id = EXCLUDED.provider_payment_id,
+           amount_minor = EXCLUDED.amount_minor, currency = EXCLUDED.currency,
            status = 'SUCCEEDED', raw_state = EXCLUDED.raw_state, updated_at = now()
          RETURNING *
+       ), booking_consents AS (
+         INSERT INTO consent_records (
+           submission_id, subject_type, subject_id, consent_type, version, text_snapshot,
+           text_hash, accepted, accepted_at, source
+         )
+         SELECT b.id, 'BOOKING', b.id, consent.consent_type, consent.version,
+                document.text_snapshot, document.text_hash, true,
+                COALESCE(b.legal_accepted_at, b.created_at), 'PAYMENT_CTA'
+         FROM created_booking b
+         CROSS JOIN LATERAL (VALUES
+           ('TERMS', b.terms_version), ('PRIVACY', b.privacy_version), ('BOOKING_POLICY', b.booking_policy_version)
+         ) AS consent(consent_type, version)
+         JOIN legal_document_versions document
+           ON document.document_key = consent.consent_type AND document.version = consent.version
+         WHERE consent.version IS NOT NULL
+         ON CONFLICT (submission_id, consent_type) DO NOTHING
        ), completed_checkout AS (
-         UPDATE checkout_sessions c SET status = 'CONFIRMED', provider_payment_id = $2, updated_at = now()
-         FROM created_booking b WHERE c.id = b.checkout_session_id
+         UPDATE checkout_sessions c SET status = 'CONFIRMED', provider_payment_id = $2,
+           fan_email = identified.fan_email, contact_status = identified.contact_status,
+           last_error_code = NULL, updated_at = now()
+         FROM created_booking b JOIN identified_checkout identified ON identified.id = b.checkout_session_id
+         WHERE c.id = b.checkout_session_id
        ), completed_handoff AS (
          UPDATE payment_handoffs h
          SET status = 'CONSUMED', provider_payment_id = $2, provider_verified_at = COALESCE(h.provider_verified_at, now()),
