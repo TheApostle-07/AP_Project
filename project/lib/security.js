@@ -17,7 +17,9 @@ export function readCookie(request, name) {
   const cookies = String(request.headers.cookie || '').split(';');
   for (const entry of cookies) {
     const [key, ...parts] = entry.trim().split('=');
-    if (key === name) return decodeURIComponent(parts.join('='));
+    if (key === name) {
+      try { return decodeURIComponent(parts.join('=')); } catch { return null; }
+    }
   }
   return null;
 }
@@ -42,10 +44,11 @@ export function requestIsSameOrigin(request) {
   try {
     const fetchSite = request.headers['sec-fetch-site'];
     if (fetchSite && fetchSite !== 'same-origin' && fetchSite !== 'none') return false;
-    const host = String(request.headers['x-forwarded-host'] || request.headers.host || '').split(',')[0].trim();
+    const host = String(request.headers.host || '').trim();
     if (!host) return false;
-    const local = String(host || '').startsWith('localhost') || String(host || '').startsWith('127.0.0.1');
-    const expected = `${request.headers['x-forwarded-proto'] || (local ? 'http' : 'https')}://${host}`;
+    const hostname = new URL(`https://${host}`).hostname;
+    const local = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+    const expected = `${local ? 'http' : 'https'}://${host}`;
     if (origin) return new URL(origin).origin === new URL(expected).origin;
     const referer = request.headers.referer;
     return Boolean(referer && new URL(referer).origin === new URL(expected).origin);
@@ -64,6 +67,24 @@ export async function enforceTokenRateLimit(tokenHash, route, limit) {
     [tokenHash, route],
   );
   return Number(rows[0]?.count || 1) <= limit;
+}
+
+export function enforceRequestRateLimit(request, route, limit) {
+  const ip = String(request.headers['x-vercel-forwarded-for'] || request.headers['x-forwarded-for'] || request.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  return enforceTokenRateLimit(handoffTokenHash(`request-ip:${ip}`), route, limit);
+}
+
+export async function readWebhookBody(request, maxBytes = 65_536) {
+  if (Number(request.headers['content-length']) > maxBytes) return null;
+  const chunks = [];
+  let bytes = 0;
+  for await (const value of request) {
+    const chunk = Buffer.isBuffer(value) ? value : Buffer.from(value);
+    bytes += chunk.length;
+    if (bytes > maxBytes) return null;
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks, bytes).toString('utf8');
 }
 
 export function normalizedEmail(value) {

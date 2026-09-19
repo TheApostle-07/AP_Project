@@ -17,6 +17,7 @@ module.exports = {
   async headers() {
     return [
       { source: '/(.*)', headers: securityHeaders },
+      { source: '/brand/:asset', headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }, { key: 'Cross-Origin-Resource-Policy', value: 'cross-origin' }] },
       { source: '/pay', headers: [{ key: 'Cache-Control', value: 'private, no-store, max-age=0, must-revalidate' }, { key: 'Pragma', value: 'no-cache' }, { key: 'Expires', value: '0' }, { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive, nosnippet' }] },
       { source: '/api/(.*)', headers: [{ key: 'Cache-Control', value: 'private, no-store, max-age=0, must-revalidate' }, { key: 'Pragma', value: 'no-cache' }, { key: 'Expires', value: '0' }, { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive, nosnippet' }] },
     ];

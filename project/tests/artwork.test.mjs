@@ -261,7 +261,7 @@ async function webhook(event, { signature = true } = {}) {
     '../../lib/fulfilment': { fulfilRazorpayPayment: async () => { bookingCalls++; } },
   });
   const request = Readable.from([JSON.stringify(event)]);
-  request.method='POST'; request.headers={'x-razorpay-signature':'test-signature','x-razorpay-event-id':randomUUID()};
+  request.method='POST'; request.headers={'x-razorpay-signature':'a'.repeat(64),'x-razorpay-event-id':randomUUID()};
   const response = { statusCode:200, setHeader(){}, status(code){this.statusCode=code;return this;},json(body){this.body=body;return this;} };
   await handler(request,response); return {...response,bookingCalls,writes};
 }

@@ -21,6 +21,9 @@ button:focus-visible, a:focus-visible { outline: 3px solid color-mix(in srgb, va
 .payment-page { min-height: 100svh; padding: clamp(24px, 5vw, 64px) 16px; display: grid; place-items: center; }
 .payment-shell { width: min(100%, 720px); }
 .wordmark { display: inline-block; margin: 0 0 52px; color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: .23em; }
+.payment-brand { display: flex; width: fit-content; min-height: 44px; align-items: center; gap: 10px; margin: 0 0 28px; color: var(--text); text-decoration: none; border-radius: 10px; }
+.payment-brand img { display: block; flex: none; width: 40px; height: 40px; border-radius: 9px; background: #65645f; }
+.payment-brand span { font-size: 13px; line-height: 1; font-weight: 500; letter-spacing: .2em; }
 .payment-card { padding: clamp(28px, 6vw, 56px); border: 1px solid var(--border); border-radius: 20px; background: var(--surface); box-shadow: 0 20px 60px rgba(28, 24, 20, .045); }
 .creator-row { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding-bottom: 26px; border-bottom: 1px solid var(--border); }
 .creator-row img { width: 64px; height: 64px; border-radius: 16px; object-fit: cover; background: var(--soft); }

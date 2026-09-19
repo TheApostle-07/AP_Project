@@ -1,5 +1,6 @@
 import Head from 'next/head';
 import Script from 'next/script';
+import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 
 const bookingOrigin = process.env.NEXT_PUBLIC_BOOKING_ORIGIN || 'https://alina-popova-im.vercel.app';
@@ -120,7 +121,7 @@ export default function PaymentPage() {
         order_id: order.orderId,
         name: 'ALINA',
         description: order.description,
-        image: checkout.creatorImageUrl,
+        image: new URL('/brand/alina-ap-v1-96.png', window.location.origin).toString(),
         handler: (providerResult) => {
           void (async () => {
             setState('verifying');
@@ -179,7 +180,7 @@ export default function PaymentPage() {
       {checkout && ['ready', 'opening', 'checkout', 'verifying'].includes(state) ? <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" onLoad={() => setRazorpayReady(true)} onError={() => { setRazorpayReady(false); setMessage('Razorpay could not load. Check your connection and try again.'); }} /> : null}
       <main className="payment-page">
         <div className="payment-shell">
-          <a className="wordmark" href={bookingOrigin} aria-label="Alina home">ALINA</a>
+          <a className="payment-brand" href={bookingOrigin} aria-label="Alina home"><Image src="/brand/alina-ap-v1-96.webp" alt="" width={40} height={40} unoptimized loading="eager" /><span>ALINA</span></a>
           {state === 'loading' ? <section className="payment-card loading-card" aria-live="polite"><span className="loader" aria-hidden="true" /><p>{message}</p></section> : null}
           {state === 'error' ? <section className="payment-card error-card"><span className="status-dot" aria-hidden="true">!</span><p className="eyebrow">Payment link unavailable</p><h1>Return to your booking.</h1><p>{message}</p><a className="primary-action" href={bookingOrigin}>Back to Alina</a></section> : null}
           {checkout && state !== 'loading' && state !== 'error' ? (

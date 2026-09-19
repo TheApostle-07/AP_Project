@@ -4,14 +4,9 @@ import { fulfilRazorpayPayment } from '../../lib/fulfilment';
 import { fetchOrder, fetchOrderPayments, fetchPayment, verifyWebhookSignature } from '../../lib/paymentGateway';
 import { artworkService } from '../../lib/artwork-server';
 import { ArtworkError } from '../../lib/artwork-orders.mjs';
+import { readWebhookBody } from '../../lib/security';
 
 export const config = { api: { bodyParser: false } };
-
-async function rawRequestBody(request) {
-  const chunks = [];
-  for await (const chunk of request) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  return Buffer.concat(chunks).toString('utf8');
-}
 
 function orderIdFromEvent(event) {
   return event?.payload?.payment?.entity?.order_id || event?.payload?.order?.entity?.id || null;
@@ -22,8 +17,10 @@ export default async function handler(request, response) {
     response.setHeader('Allow', 'POST');
     return response.status(405).json({ message: 'Method not allowed.' });
   }
-  const body = await rawRequestBody(request);
   const signature = String(request.headers['x-razorpay-signature'] || '');
+  if (!/^[a-f0-9]{64}$/i.test(signature)) return response.status(400).json({ message: 'Invalid signature.' });
+  const body = await readWebhookBody(request);
+  if (body === null) return response.status(413).json({ message: 'Webhook payload is too large.' });
   try {
     if (!signature || !verifyWebhookSignature(body, signature)) return response.status(400).json({ message: 'Invalid signature.' });
   } catch {

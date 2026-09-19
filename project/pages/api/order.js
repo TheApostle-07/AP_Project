@@ -3,6 +3,8 @@ import { query } from '../../lib/db';
 import { createOrder, fetchOrder, publicKey } from '../../lib/paymentGateway';
 import { enforceTokenRateLimit, handoffTokenHash, requestIsSameOrigin } from '../../lib/security';
 
+export const config = { api: { bodyParser: { sizeLimit: '8kb' } } };
+
 function checkoutPayload(order, handoff) {
   return {
     keyId: publicKey(),

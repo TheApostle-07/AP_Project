@@ -1,6 +1,8 @@
 import { getHandoffByToken, publicSummary } from '../../../lib/handoff';
 import { query } from '../../../lib/db';
-import { clearHandoffCookie, isValidHandoffToken, requestIsSameOrigin, setHandoffCookie } from '../../../lib/security';
+import { clearHandoffCookie, enforceRequestRateLimit, isValidHandoffToken, requestIsSameOrigin, setHandoffCookie } from '../../../lib/security';
+
+export const config = { api: { bodyParser: { sizeLimit: '8kb' } } };
 
 export default async function handler(request, response) {
   response.setHeader('Cache-Control', 'private, no-store, max-age=0');
@@ -13,6 +15,7 @@ export default async function handler(request, response) {
   const token = request.body?.token;
   if (!isValidHandoffToken(token)) return response.status(404).json({ message: 'This payment link is invalid or has expired.' });
   try {
+    if (!(await enforceRequestRateLimit(request, 'payment-handoff-open', 20))) return response.status(429).json({ message: 'Please wait a minute before reopening payment. Nothing was charged.' });
     const handoff = await getHandoffByToken(token);
     if (!handoff) return response.status(404).json({ message: 'This payment link is invalid or has expired.' });
     if (!['PAYMENT_PROCESSING', 'CONFIRMED'].includes(handoff.checkout_status)) {

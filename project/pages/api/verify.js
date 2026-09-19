@@ -3,6 +3,8 @@ import { getRequestHandoff } from '../../lib/handoff';
 import { fetchOrder, fetchPayment, verifyPaymentSignature } from '../../lib/paymentGateway';
 import { clearHandoffCookie, enforceTokenRateLimit, handoffTokenHash, requestIsSameOrigin } from '../../lib/security';
 
+export const config = { api: { bodyParser: { sizeLimit: '8kb' } } };
+
 export default async function handler(request, response) {
   response.setHeader('Cache-Control', 'private, no-store, max-age=0');
   response.setHeader('Vary', 'Cookie, Origin');
