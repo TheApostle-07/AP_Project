@@ -32,16 +32,22 @@ export default async function handler(request, response) {
   const bodyHash = crypto.createHash('sha256').update(body).digest('hex');
   const eventId = String(request.headers['x-razorpay-event-id'] || `body-${bodyHash}`).slice(0, 200);
   const accepted = await query(
-    `INSERT INTO webhook_events (provider, provider_event_id, event_type, payload_hash, processing_state, provider_created_at)
-     VALUES ('RAZORPAY', $1, $2, $3, 'PROCESSING', to_timestamp($4))
+    `INSERT INTO webhook_events (provider, provider_event_id, event_type, payload_hash, processing_state, provider_created_at, processing_lease_id, processing_lease_until)
+     VALUES ('RAZORPAY', $1, $2, $3, 'PROCESSING', to_timestamp($4), gen_random_uuid(), now() + interval '2 minutes')
      ON CONFLICT (provider, provider_event_id) DO UPDATE SET
-       processing_state = 'PROCESSING', retry_count = webhook_events.retry_count + 1, last_error_code = NULL
-     WHERE webhook_events.processing_state = 'FAILED'
-        OR (webhook_events.processing_state = 'PROCESSING' AND webhook_events.received_at < now() - interval '10 minutes')
-     RETURNING id`,
+       processing_state = 'PROCESSING', retry_count = webhook_events.retry_count + 1,
+       processing_lease_id = EXCLUDED.processing_lease_id, processing_lease_until = EXCLUDED.processing_lease_until, last_error_code = NULL
+     WHERE webhook_events.payload_hash = EXCLUDED.payload_hash AND (webhook_events.processing_state = 'FAILED'
+        OR (webhook_events.processing_state = 'PROCESSING' AND COALESCE(webhook_events.processing_lease_until,webhook_events.received_at + interval '10 minutes') < now()))
+     RETURNING id, processing_lease_id`,
     [eventId, event.event.slice(0, 100), bodyHash, Number(event.created_at || Math.floor(Date.now() / 1000))],
   );
-  if (!accepted[0]) return response.status(200).json({ received: true, duplicate: true });
+  if (!accepted[0]) {
+    const [existing] = await query("SELECT processing_state FROM webhook_events WHERE provider='RAZORPAY' AND provider_event_id=$1", [eventId]);
+    if (existing?.processing_state === 'PROCESSED') return response.status(200).json({ received: true, duplicate: true });
+    response.setHeader('Retry-After','30');
+    return response.status(503).json({ message: 'Event processing is pending.' });
+  }
 
   try {
     const orderId = orderIdFromEvent(event);
@@ -69,24 +75,24 @@ export default async function handler(request, response) {
     }
     await query(
       `UPDATE webhook_events SET processing_state = 'PROCESSED', processed_at = now(), last_error_code = NULL
-       WHERE provider = 'RAZORPAY' AND provider_event_id = $1`,
-      [eventId],
+       WHERE provider = 'RAZORPAY' AND provider_event_id = $1 AND processing_lease_id = $2`,
+      [eventId, accepted[0].processing_lease_id],
     );
     return response.status(200).json({ received: true });
   } catch (error) {
     if ((error instanceof Error && error.message === 'CHECKOUT_NOT_FOUND') || (error instanceof ArtworkError && error.status === 404)) {
       await query(
         `UPDATE webhook_events SET processing_state = 'PROCESSED', processed_at = now(), last_error_code = 'UNRELATED_ORDER'
-         WHERE provider = 'RAZORPAY' AND provider_event_id = $1`,
-        [eventId],
+         WHERE provider = 'RAZORPAY' AND provider_event_id = $1 AND processing_lease_id = $2`,
+        [eventId, accepted[0].processing_lease_id],
       );
       return response.status(200).json({ received: true, ignored: true });
     }
     const code = error instanceof Error ? error.message.slice(0, 100) : 'WEBHOOK_PROCESSING_FAILED';
     await query(
       `UPDATE webhook_events SET processing_state = 'FAILED', retry_count = retry_count + 1, last_error_code = $2
-       WHERE provider = 'RAZORPAY' AND provider_event_id = $1`,
-      [eventId, code],
+       WHERE provider = 'RAZORPAY' AND provider_event_id = $1 AND processing_lease_id = $3`,
+      [eventId, code, accepted[0].processing_lease_id],
     ).catch(() => undefined);
     return response.status(500).json({ message: 'Webhook processing will be retried.' });
   }

@@ -1,4 +1,5 @@
 import { neon } from '@neondatabase/serverless';
+import { needsBookingDispatch, withBookingDispatch } from './background-dispatch.mjs';
 
 let sqlClient;
 
@@ -10,7 +11,14 @@ function database() {
 }
 
 export async function query(text, values = []) {
-  return database().query(text, values);
+  return withBookingDispatch(text, async () => {
+    const sql = database();
+    if (!needsBookingDispatch(text)) return sql.query(text, values);
+    const result = await sql.transaction([
+      sql.query("SET LOCAL statement_timeout = '15s'"), sql.query(text, values),
+    ], { isolationLevel: 'ReadCommitted', fetchOptions: { signal: AbortSignal.timeout(30_000) } });
+    return result[1];
+  });
 }
 
 export function hasDatabase() {
